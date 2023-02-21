@@ -14,6 +14,7 @@ historyList = []
 # 集锦存在位置
 collectionDir = '/Users/kwok-jay/Library/Application\ Support/Microsoft\ Edge/Default/Collections/collectionsSQLite'
 collectionList = []
+collectionClasses = []
 # 指定一个历史记录缓存位置 避免database is locked
 tempHistory = './history'
 tempCollection = './collection'
@@ -82,12 +83,22 @@ def getHistory(keylist):
         AddList(historyList, url, name, keylist)
 
 
-def getCollections(keylist):
+def getCollections(keylist, pid=''):
     # sqlite文件拷贝后使用 防止浏览器线程给文件加锁无法访问
     os.system('cp ' + collectionDir + ' ' + tempCollection)
     conn = sqlite3.connect(tempCollection)
     cursor = conn.cursor()
-    SQL = 'SELECT source,title FROM items'
+    if pid == '':
+        SQL = 'SELECT source,title FROM items'
+    else:
+        SQL = """SELECT a.source,a.title,b.parent_id 
+        FROM (SELECT id,title,source FROM items) AS a 
+        LEFT JOIN collections_items_relationship as b on a.id=b.item_id 
+        WHERE parent_id='{}'""".format(str(pid))
+    # SQL = """SELECT c.title,c.source,d.title as p_title FROM
+    #         (SELECT a.title,a.source,b.parent_id FROM
+    #         (SELECT id,title,source FROM items) AS a LEFT JOIN collections_items_relationship as b on a.id=b.item_id) as c
+    #         LEFT JOIN collections as d on c.parent_id=d.id"""
     cursor.execute(SQL)
     query_result = cursor.fetchall()
     cursor.close()
@@ -105,7 +116,34 @@ def getCollections(keylist):
             continue
         else:
             nameList.append(name)
-        AddList(collectionList, url, name, keylist)
+        if pid == '':
+            AddList(collectionList, url, name, keylist)
+        else:
+            collectionList.append({'name': name, 'url': url, 'type': 1})
+
+
+def getCollectionsClasses(keylist):
+    conn = sqlite3.connect(tempCollection)
+    cursor = conn.cursor()
+    SQL = 'SELECT id,title FROM collections'
+    cursor.execute(SQL)
+    query_result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    for i in query_result:
+        id = i[0]
+        name = i[1]
+        flag = 0
+        # 多个关键词同时在名称中包含 或者 多个关键词同时在url中包含
+        for j in keylist:
+            if j.lower() in name.lower():
+                flag += 1
+        if flag == len(keylist):
+            collectionClasses.append({
+                'name': name,
+                'url': id,
+                'type': 0,
+            })
 
 
 def printResult(dataList):
@@ -115,7 +153,11 @@ def printResult(dataList):
         for i in datas:
             template["arg"] = i['url']
             template["icon"]['path'] = icon
-            if i['type'] == 1:
+            if i['type'] == 0:
+                template["title"] = i['name']
+                template["subtitle"] = '打开合集[' + i['name'] + ']'
+                template["arg"] = 'collection,' + i['url']
+            if i['type'] == 1:  # 优先显示name还是url
                 template["title"] = i['name']
                 template["subtitle"] = i['url']
             if i['type'] == 2:
@@ -127,8 +169,14 @@ def printResult(dataList):
 
 if __name__ == '__main__':
     keylist = sys.argv[1:]
-    getBooks(keylist)
-    getHistory(keylist)
-    getCollections(keylist)
-    printResult([('mark.png', bookList), ('collection.png', collectionList),
-                 ('history.png', historyList)])
+    if keylist[0].startswith('collection,'):
+        getCollections(keylist, pid=keylist[0][11:])
+        printResult([('collection.png', collectionList)])
+    else:
+        getBooks(keylist)
+        getHistory(keylist)
+        getCollections(keylist)
+        getCollectionsClasses(keylist)
+        printResult([('class.png', collectionClasses), ('mark.png', bookList),
+                     ('collection.png', collectionList),
+                     ('history.png', historyList)])

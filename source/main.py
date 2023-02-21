@@ -83,22 +83,12 @@ def getHistory(keylist):
         AddList(historyList, url, name, keylist)
 
 
-def getCollections(keylist, pid=''):
+def getCollections(keylist):
     # sqlite文件拷贝后使用 防止浏览器线程给文件加锁无法访问
     os.system('cp ' + collectionDir + ' ' + tempCollection)
     conn = sqlite3.connect(tempCollection)
     cursor = conn.cursor()
-    if pid == '':
-        SQL = 'SELECT source,title FROM items'
-    else:
-        SQL = """SELECT a.source,a.title,b.parent_id 
-        FROM (SELECT id,title,source FROM items) AS a 
-        LEFT JOIN collections_items_relationship as b on a.id=b.item_id 
-        WHERE parent_id='{}'""".format(str(pid))
-    # SQL = """SELECT c.title,c.source,d.title as p_title FROM
-    #         (SELECT a.title,a.source,b.parent_id FROM
-    #         (SELECT id,title,source FROM items) AS a LEFT JOIN collections_items_relationship as b on a.id=b.item_id) as c
-    #         LEFT JOIN collections as d on c.parent_id=d.id"""
+    SQL = 'SELECT source,title FROM items'
     cursor.execute(SQL)
     query_result = cursor.fetchall()
     cursor.close()
@@ -116,10 +106,7 @@ def getCollections(keylist, pid=''):
             continue
         else:
             nameList.append(name)
-        if pid == '':
-            AddList(collectionList, url, name, keylist)
-        else:
-            collectionList.append({'name': name, 'url': url, 'type': 1})
+        AddList(collectionList, url, name, keylist)
 
 
 def getCollectionsClasses(keylist):
@@ -146,6 +133,44 @@ def getCollectionsClasses(keylist):
             })
 
 
+def getCollectionItems(keylist):
+    f_title = keylist[1]
+    keylist = keylist[2:] if len(keylist) > 2 else []
+    # sqlite文件拷贝后使用 防止浏览器线程给文件加锁无法访问
+    conn = sqlite3.connect(tempCollection)
+    cursor = conn.cursor()
+    # SQL = """SELECT a.source,a.title,b.parent_id
+    # FROM (SELECT id,title,source FROM items) AS a
+    # LEFT JOIN collections_items_relationship as b on a.id=b.item_id
+    # WHERE parent_id='{}'""".format(str(f_title))
+    SQL = """SELECT c.source,c.title,d.title as p_title FROM
+            (SELECT a.title,a.source,b.parent_id FROM
+            (SELECT id,title,source FROM items) AS a LEFT JOIN collections_items_relationship as b on a.id=b.item_id) as c
+            LEFT JOIN collections as d on c.parent_id=d.id 
+            WHERE p_title='{}'""".format(str(f_title))
+    cursor.execute(SQL)
+    query_result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    nameList = []
+    for i in query_result:
+        url = i[0]
+        if len(url) > 0:
+            url = json.loads(url.decode())['url']
+        else:
+            continue
+        name = i[1]
+        # 去重
+        if name != '' and name in nameList:
+            continue
+        else:
+            nameList.append(name)
+        if len(keylist) > 0:
+            AddList(collectionList, url, name, keylist)
+        else:
+            collectionList.append({'name': name, 'url': url, 'type': 1})
+
+
 def printResult(dataList):
     items = {"items": []}
     template = {"title": "", "subtitle": "", "arg": "", "icon": {"path": ""}}
@@ -156,7 +181,7 @@ def printResult(dataList):
             if i['type'] == 0:
                 template["title"] = i['name']
                 template["subtitle"] = '打开合集[' + i['name'] + ']'
-                template["arg"] = 'collection,' + i['url']
+                template["arg"] = 'ee ' + i['name']
             if i['type'] == 1:  # 优先显示name还是url
                 template["title"] = i['name']
                 template["subtitle"] = i['url']
@@ -169,8 +194,8 @@ def printResult(dataList):
 
 if __name__ == '__main__':
     keylist = sys.argv[1:]
-    if keylist[0].startswith('collection,'):
-        getCollections(keylist, pid=keylist[0][11:])
+    if keylist[0] == 'ee':
+        getCollectionItems(keylist)
         printResult([('collection.png', collectionList)])
     else:
         getBooks(keylist)

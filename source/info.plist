@@ -96,8 +96,6 @@
 				<integer>0</integer>
 				<key>escaping</key>
 				<integer>102</integer>
-				<key>keyword</key>
-				<string>cc</string>
 				<key>queuedelaycustom</key>
 				<integer>3</integer>
 				<key>queuedelayimmediatelyinitially</key>
@@ -131,6 +129,25 @@ EOB</string>
 			<string>alfred.workflow.input.scriptfilter</string>
 			<key>uid</key>
 			<string>E2B39E7F-FFC6-482B-B05F-B72416B46A3A</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>autopaste</key>
+				<false/>
+				<key>clipboardtext</key>
+				<string>{query}</string>
+				<key>ignoredynamicplaceholders</key>
+				<false/>
+				<key>transient</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.clipboard</string>
+			<key>uid</key>
+			<string>6393399F-A4EC-4DDE-96E0-347509975B3A</string>
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
@@ -211,25 +228,6 @@ EOB</string>
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>autopaste</key>
-				<false/>
-				<key>clipboardtext</key>
-				<string>{query}</string>
-				<key>ignoredynamicplaceholders</key>
-				<false/>
-				<key>transient</key>
-				<false/>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.output.clipboard</string>
-			<key>uid</key>
-			<string>6393399F-A4EC-4DDE-96E0-347509975B3A</string>
-			<key>version</key>
-			<integer>3</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>conditions</key>
 				<array>
 					<dict>
@@ -240,7 +238,7 @@ EOB</string>
 						<key>matchmode</key>
 						<integer>4</integer>
 						<key>matchstring</key>
-						<string>collection</string>
+						<string>ee</string>
 						<key>outputlabel</key>
 						<string>打开合集</string>
 						<key>uid</key>
@@ -281,23 +279,23 @@ EOB</string>
 		<key>C6A32093-A7EC-4908-A4A7-376156770272</key>
 		<dict>
 			<key>xpos</key>
-			<real>30</real>
+			<real>45</real>
 			<key>ypos</key>
-			<real>135</real>
+			<real>140</real>
 		</dict>
 		<key>E2B39E7F-FFC6-482B-B05F-B72416B46A3A</key>
 		<dict>
 			<key>xpos</key>
-			<real>305</real>
+			<real>320</real>
 			<key>ypos</key>
-			<real>25</real>
+			<real>35</real>
 		</dict>
 		<key>FFA643B4-5357-4512-86BB-48863B57455C</key>
 		<dict>
 			<key>xpos</key>
-			<real>210</real>
+			<real>225</real>
 			<key>ypos</key>
-			<real>155</real>
+			<real>170</real>
 		</dict>
 	</dict>
 	<key>userconfigurationconfig</key>
@@ -305,7 +303,7 @@ EOB</string>
 	<key>variablesdontexport</key>
 	<array/>
 	<key>version</key>
-	<string>1.0.0</string>
+	<string>2.1.0</string>
 	<key>webaddress</key>
 	<string>https://github.com/kwok-jay/Alfred_Workflows-Edge_History_Search</string>
 </dict>

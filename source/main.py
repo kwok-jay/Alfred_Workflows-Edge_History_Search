@@ -8,12 +8,15 @@ from urllib import parse
 # 书签存在位置
 booksDir = '/Users/kwok-jay/Library/Application Support/Microsoft Edge/Default/Bookmarks'
 bookList = []
-
 # 历史记录存在位置
 historyDir = '/Users/kwok-jay/Library/Application\ Support/Microsoft\ Edge/Default/History'
-# 指定一个历史记录缓存位置 避免database is locked
-tempDir = './cache'
 historyList = []
+# 集锦存在位置
+collectionDir = '/Users/kwok-jay/Library/Application\ Support/Microsoft\ Edge/Default/Collections/collectionsSQLite'
+collectionList = []
+# 指定一个历史记录缓存位置 避免database is locked
+tempHistory = './history'
+tempCollection = './collection'
 
 
 # 关键词查找逻辑
@@ -27,9 +30,9 @@ def AddList(allList, url, name, keylist):
         # url中的url编码部门也要参与搜索
         if parse.quote(j).lower() in url.lower():
             flag2 += 1
-    if flag1 == len(keylist):
+    if flag1 == len(keylist):  # 命中了name
         allList.append({'name': name, 'url': url, 'type': 1})
-    elif flag2 == len(keylist):
+    elif flag2 == len(keylist):  # 命中了url
         allList.append({'name': name, 'url': url, 'type': 2})
 
 
@@ -58,8 +61,8 @@ def getBooks(keylist):
 
 def getHistory(keylist):
     # sqlite文件拷贝后使用 防止浏览器线程给文件加锁无法访问
-    os.system('cp ' + historyDir + ' ' + tempDir)
-    conn = sqlite3.connect(tempDir)
+    os.system('cp ' + historyDir + ' ' + tempHistory)
+    conn = sqlite3.connect(tempHistory)
     cursor = conn.cursor()
     SQL = """SELECT DISTINCT(url), title, datetime((last_visit_time/1000000)-11644473600, 'unixepoch', 'localtime') 
                                         AS last_visit_time FROM urls ORDER BY last_visit_time DESC """
@@ -79,36 +82,53 @@ def getHistory(keylist):
         AddList(historyList, url, name, keylist)
 
 
-def printResult(historyList, bookList):
+def getCollections(keylist):
+    # sqlite文件拷贝后使用 防止浏览器线程给文件加锁无法访问
+    os.system('cp ' + collectionDir + ' ' + tempCollection)
+    conn = sqlite3.connect(tempCollection)
+    cursor = conn.cursor()
+    SQL = 'SELECT source,title FROM items'
+    cursor.execute(SQL)
+    query_result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    nameList = []
+    for i in query_result:
+        url = i[0]
+        if len(url) > 0:
+            url = json.loads(url.decode())['url']
+        else:
+            continue
+        name = i[1]
+        # 去重
+        if name != '' and name in nameList:
+            continue
+        else:
+            nameList.append(name)
+        AddList(collectionList, url, name, keylist)
+
+
+def printResult(dataList):
     items = {"items": []}
     template = {"title": "", "subtitle": "", "arg": "", "icon": {"path": ""}}
-    for i in bookList:
-        template["arg"] = i['url']
-        template["icon"]['path'] = 'mark.png'
-        if i['type'] == 1:
-            template["title"] = i['name']
-            template["subtitle"] = i['url']
-        if i['type'] == 2:
-            template["title"] = parse.unquote(i['url'])
-            template["subtitle"] = i['name']
-        items["items"].append(copy.deepcopy(template))
-    for i in historyList:
-        template["arg"] = i['url']
-        template["icon"]['path'] = 'history.png'
-        if i['type'] == 1:
-            template["title"] = i['name']
-            template["subtitle"] = i['url']
-        if i['type'] == 2:
-            template["title"] = parse.unquote(i['url'])
-            template["subtitle"] = i['name']
-        items["items"].append(copy.deepcopy(template))
-    res = json.dumps(items, ensure_ascii=False)
-    print(res)
-    return res
+    for icon, datas in dataList:
+        for i in datas:
+            template["arg"] = i['url']
+            template["icon"]['path'] = icon
+            if i['type'] == 1:
+                template["title"] = i['name']
+                template["subtitle"] = i['url']
+            if i['type'] == 2:
+                template["title"] = parse.unquote(i['url'])
+                template["subtitle"] = i['name']
+            items["items"].append(copy.deepcopy(template))
+    print(json.dumps(items, ensure_ascii=False))
 
 
 if __name__ == '__main__':
     keylist = sys.argv[1:]
     getBooks(keylist)
     getHistory(keylist)
-    printResult(historyList, bookList)
+    getCollections(keylist)
+    printResult([('mark.png', bookList), ('collection.png', collectionList),
+                 ('history.png', historyList)])
